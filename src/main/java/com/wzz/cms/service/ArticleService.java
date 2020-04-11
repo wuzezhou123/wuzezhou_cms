@@ -35,6 +35,8 @@ public interface ArticleService {
 	 */
 	PageInfo<Article> selects(Article article,Integer page,Integer pgeSize);
 	
+	
+	
 	/**
 	 * 
 	 * @Title: update 
@@ -44,4 +46,6 @@ public interface ArticleService {
 	 * @return: int
 	 */
 	int update(Article article);
+
+	int dianJi(Integer id);
 }

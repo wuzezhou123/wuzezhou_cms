@@ -1,18 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
+xmlns:p="http://www.springframework.org/schema/p"
+xmlns:elasticsearch="http://www.springframework.org/schema/data/elasticsearch"
+xmlns:task="http://www.springframework.org/schema/task"
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xmlns:aop="http://www.springframework.org/schema/aop"
 	xmlns:context="http://www.springframework.org/schema/context"
 	xmlns:tx="http://www.springframework.org/schema/tx"
 	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		 http://www.springframework.org/schema/data/elasticsearch http://www.springframework.org/schema/data/elasticsearch/spring-elasticsearch.xsd
 		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.3.xsd
 		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.3.xsd
-		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.3.xsd">
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.3.xsd
+			http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task.xsd">
 
-
+		<!-- spring线程池的配置 -->
+	<task:executor id="executor" pool-size="10-1000"
+		queue-capacity="10" keep-alive="10" rejection-policy="CALLER_RUNS" />
+	<task:annotation-driven/>
 
 	<!-- 1、注解扫描器 -->
-	<context:component-scan base-package="com.wzz.cms" >
+	<context:component-scan base-package="com.wzz.cms.service" >
 		<!-- 排除要要扫描的controller -->
 		<context:exclude-filter type="annotation"
 			expression="org.springframework.stereotype.Controller" />
@@ -86,5 +94,53 @@
 		<property name="basePackage" value="com.wzz.cms.dao"></property>
 
 	</bean>
+	
 
+	
+	
+
+	<!-- kafka producer -->
+	<!--参数配置 -->
+	<bean id="producerProperties" class="java.util.HashMap">
+		<constructor-arg>
+			<map>
+				<!-- kafka服务地址，可能是集群 value="localhost:9092,localhost:9093,localhost:9094"-->
+				<entry key="bootstrap.servers" value="192.168.44.128:9092" />
+				
+				<!-- 有可能导致broker接收到重复的消息-->
+				<entry key="retries" value="0" />
+				<!-- 每次批量发送消息的数量 -->
+				<entry key="batch.size" value="1638" />
+				<!-- 默认0ms，在异步IO线程被触发后（任何一个topic，partition满都可以触发） -->
+				<entry key="linger.ms" value="1" />
+				
+				<!--producer可以用来缓存数据的内存大小。如果数据产生速度大于向broker发送的速度，producer会阻塞或者抛出异常 -->
+				<entry key="buffer.memory" value="33554432 " />
+				
+				<entry key="key.serializer"
+					value="org.apache.kafka.common.serialization.StringSerializer" />
+					
+				<entry key="value.serializer"
+					value="org.apache.kafka.common.serialization.StringSerializer" />
+			</map>
+		</constructor-arg>
+	</bean>
+
+	<!-- 创建kafkatemplate需要使用的producerfactory bean -->
+	<bean id="producerFactory"
+		class="org.springframework.kafka.core.DefaultKafkaProducerFactory">
+		<constructor-arg>
+			<ref bean="producerProperties" />
+		</constructor-arg>
+	</bean>
+
+	<!-- 创建kafkatemplate bean，使用的时候，只需要注入这个bean，即可使用template的send消息方法 -->
+	<bean id="KafkaTemplate"
+		class="org.springframework.kafka.core.KafkaTemplate">
+		<constructor-arg ref="producerFactory" />
+		<!--设置对应topic -->
+		<property name="defaultTopic" value="1704D" />
+	</bean>
+	<import resource="classpath:spring-es.xml"/>
+	<import resource="classpath:redis.xml"/>
 </beans>

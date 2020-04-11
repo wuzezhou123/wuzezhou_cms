@@ -3,13 +3,26 @@ package com.wzz.cms.domain;
 import java.io.Serializable;
 import java.util.Date;
 
+import org.springframework.data.annotation.Id;
+import org.springframework.data.elasticsearch.annotations.Document;
+import org.springframework.data.elasticsearch.annotations.Field;
+import org.springframework.data.elasticsearch.annotations.FieldType;
+
+
+
+
+
+
+
+
 /**
  * 
  * @ClassName: Article 
- * @Description: 文章内容表
+ * @Description: 鏂囩珷鍐呭琛�
  * @author: charles
- * @date: 2020年3月3日 上午11:25:22
+ * @date: 2020骞�3鏈�3鏃� 涓婂崍11:25:22
  */
+	@Document(indexName = "wzz_rticle",type = "article") 
 public class Article implements Serializable {
 
 	/**
@@ -18,25 +31,43 @@ public class Article implements Serializable {
 	 * @Description: TODO
 	 */
 	private static final long serialVersionUID = 1L;
-	private Integer id;//主键
-	private String title;//文章标题
-	private String summary;//文章摘要
-	private String content;//文章内容
-	private String picture;//文章的标题图片
-	private Integer channelId;//所属栏目ID
-	private Integer categoryId;//所属分类ID
-	private Integer userId;//文章发布人ID
-	private Integer hits;//  点击量
-	private Integer hot;//是否热门文章 1：热门 0 ：一般文章
-	private Integer status;//文章审核状态     0：待审        1：审核通过     -1: 审核未通过
-	private Integer deleted;// 删除状态 0:正常，1：逻辑删除
-	private Date created;// 文章发布时间
-	private  Date  updated;// 文章修改时间
+	@Id
+	private Integer id;//涓婚敭
+	@Field(index = true,analyzer = "ik_smart",store = true,searchAnalyzer = "ik_smart",type = FieldType.text)
+	private String title;//鏂囩珷鏍囬
+	private String summary;//鏂囩珷鎽樿
+	private String content;//鏂囩珷鍐呭
+	private String picture;//鏂囩珷鐨勬爣棰樺浘鐗�
+	private Integer channelId;//鎵�灞炴爮鐩甀D
+	private Integer categoryId;//鎵�灞炲垎绫籌D
+	private Integer userId;//鏂囩珷鍙戝竷浜篒D
+	private Integer hits;//  鐐瑰嚮閲�
+	private Integer hot;//鏄惁鐑棬鏂囩珷 1锛氱儹闂� 0 锛氫竴鑸枃绔�
+	private Integer status;//鏂囩珷瀹℃牳鐘舵��     0锛氬緟瀹�        1锛氬鏍搁�氳繃     -1: 瀹℃牳鏈�氳繃
+	private Integer deleted;// 鍒犻櫎鐘舵�� 0:姝ｅ父锛�1锛氶�昏緫鍒犻櫎
+	private Date created;// 鏂囩珷鍙戝竷鏃堕棿
+
+	private  Date  updated;// 鏂囩珷淇敼鏃堕棿
 	private Channel channel;
 	private Category category;
 	private User user;
 	
-	private ContentType contentType;//枚举类型=文章类型    html:普通文章类型  vote：投票类型
+	private String keywords;
+	
+	private String origin;
+	public String getKeywords() {
+		return keywords;
+	}
+	public void setKeywords(String keywords) {
+		this.keywords = keywords;
+	}
+	public String getOrigin() {
+		return origin;
+	}
+	public void setOrigin(String origin) {
+		this.origin = origin;
+	}
+	private ContentType contentType;//鏋氫妇绫诲瀷=鏂囩珷绫诲瀷    html:鏅�氭枃绔犵被鍨�  vote锛氭姇绁ㄧ被鍨�
 	
 	
 	public ContentType getContentType() {
@@ -146,6 +177,14 @@ public class Article implements Serializable {
 	}
 	public void setUser(User user) {
 		this.user = user;
+	}
+	@Override
+	public String toString() {
+		return "Article [id=" + id + ", title=" + title + ", summary=" + summary + ", content=" + content + ", picture="
+				+ picture + ", channelId=" + channelId + ", categoryId=" + categoryId + ", userId=" + userId + ", hits="
+				+ hits + ", hot=" + hot + ", status=" + status + ", deleted=" + deleted + ", created=" + created
+				+ ", updated=" + updated + ", channel=" + channel + ", category=" + category + ", user=" + user
+				+ ", keywords=" + keywords + ", origin=" + origin + ", contentType=" + contentType + "]";
 	}
 	
 }

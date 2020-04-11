@@ -1,19 +1,30 @@
 package com.wzz.cms.controller;
 
+import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
+
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Resource;
+import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.ListOperations;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
+
 
 import com.bw.common.utils.NumberUtil;
 import com.github.pagehelper.PageInfo;
@@ -37,9 +48,9 @@ import com.wzz.cms.service.VoteService;
 /**
  * 
  * @ClassName: IndexController 
- * @Description: 系统首页入口
+ * @Description: 绯荤粺棣栭〉鍏ュ彛
  * @author: charles
- * @date: 2020年3月9日 上午11:20:23
+ * @date: 2020骞�3鏈�9鏃� 涓婂崍11:20:23
  */
 @Controller
 public class IndexController {
@@ -62,51 +73,65 @@ public class IndexController {
 	
 	@Resource
 	private VoteService voteService;
+	
+	@Resource
+	private RedisTemplate rt;
 	/**
 	 * 
 	 * @Title: index 
-	 * @Description:进入首页
+	 * @Description:杩涘叆棣栭〉
 	 * @param model
 	 * @return
 	 * @return: String
 	 */
 	@RequestMapping(value = {"","/","index"})
 	public String index(Model model,Article article,@RequestParam(defaultValue = "1") Integer page,@RequestParam(defaultValue = "5")Integer pageSize) {
-		article.setStatus(1);//只显示审核过的文章
-		article.setDeleted(0);//只显示未删除
-	    model.addAttribute("article", article);//封装查询条件
+		article.setStatus(1);//鍙樉绀哄鏍歌繃鐨勬枃绔�
+		article.setDeleted(0);//鍙樉绀烘湭鍒犻櫎
+	    model.addAttribute("article", article);//灏佽鏌ヨ鏉′欢
 	    
-		//查询左侧栏目
+		//鏌ヨ宸︿晶鏍忕洰
 		List<Channel> channels = channelService.selects();
 		model.addAttribute("channels", channels);
 		
-		//如果栏目ID 不为空则查查其下所有的分类
+		//濡傛灉鏍忕洰ID 涓嶄负绌哄垯鏌ユ煡鍏朵笅鎵�鏈夌殑鍒嗙被
 		if(article.getChannelId()!=null) {
 		List<Category> categorys = channelService.selectsByChannelId(article.getChannelId());
 		model.addAttribute("categorys", categorys);
 		}
-		//如果栏目为空，说明没有点击左侧栏目，则默认为热点文章
+		//濡傛灉鏍忕洰涓虹┖锛岃鏄庢病鏈夌偣鍑诲乏渚ф爮鐩紝鍒欓粯璁や负鐑偣鏂囩珷
 		if(article.getChannelId()==null) {
 			article.setHot(1);//
-			//查询轮播图的
+			//鏌ヨ杞挱鍥剧殑
 			List<Slide> slides = slideService.selects();
 			model.addAttribute("slides", slides);
 		}
+		List<Article> rtList = rt.opsForList().range("cms_hot",0,-1);
+		//鏌ヨ鎵�鏈夌殑鏂囩珷
+		if(rtList==null || rtList.size()==0) {
+			PageInfo<Article> info = articleService.selects(article, page, pageSize);
+			rt.opsForList().leftPushAll("cms_hot",info.getList());
+			
+			info.getList().forEach(System.out :: println);
+			rt.expire("cms_hot",5, TimeUnit.MINUTES);
+			model.addAttribute("info", info);
+		}else {
+			PageInfo<Article> info =new PageInfo<Article>(rtList);
+			model.addAttribute("info", info);
+		}
 		
-		//查询所有的文章
-		PageInfo<Article> info = articleService.selects(article, page, pageSize);
-		model.addAttribute("info", info);
 		
 		
 		
-		//在右侧显示最新10遍文章
+		
+		//鍦ㄥ彸渚ф樉绀烘渶鏂�10閬嶆枃绔�
 		Article article2 = new Article();
 		article2.setStatus(1);//
 		article2.setDeleted(0);
 		PageInfo<Article> lastArticles = articleService.selects(article2, 1, 10);
 		model.addAttribute("lastArticles", lastArticles);
 		
-		// 问卷调查
+		// 闂嵎璋冩煡
 		Article voteArticle = new Article();
 		voteArticle.setStatus(1);//
 		voteArticle.setDeleted(0);
@@ -121,7 +146,7 @@ public class IndexController {
 	/**
 	 * 
 	 * @Title: articleDetail 
-	 * @Description: 文章详情
+	 * @Description: 鏂囩珷璇︽儏
 	 * @param id
 	 * @return
 	 * @return: String
@@ -130,19 +155,20 @@ public class IndexController {
 	public String articleDetail(HttpSession session ,Integer id,Model model,@RequestParam(defaultValue = "1") Integer page,@RequestParam(defaultValue = "5")Integer pageSize) {
 		Article article = articleService.select(id);
 		model.addAttribute("article", article);
-		// 查询出当前文章的评论信息
+		
+		// 鏌ヨ鍑哄綋鍓嶆枃绔犵殑璇勮淇℃伅
 		PageInfo<Comment> info = commentService.selects(article, page, pageSize);
 		
-		// 查询所有文章的评论
+		// 鏌ヨ鎵�鏈夋枃绔犵殑璇勮
 		PageInfo<Article> info2 = commentService.selectsByCommentNum(1, 10);
 		model.addAttribute("info", info);
 		model.addAttribute("info2", info2);
-		//查询该文章是否被收藏过
+		//鏌ヨ璇ユ枃绔犳槸鍚﹁鏀惰棌杩�
 		
 		
 		User user = (User) session.getAttribute("user");
 		  Collect collect =null;
-		if(null !=user) {//如果用户已经登录，则查询是否没收藏过
+		if(null !=user) {//濡傛灉鐢ㄦ埛宸茬粡鐧诲綍锛屽垯鏌ヨ鏄惁娌℃敹钘忚繃
 		   collect = collectService.selectByTitleAndUserId(article.getTitle(), user.getId());
 		}
 		model.addAttribute("collect", collect);
@@ -156,7 +182,7 @@ public class IndexController {
 	/**
 	 * 
 	 * @Title: articleDetail 
-	 * @Description: 投票详情
+	 * @Description: 鎶曠エ璇︽儏
 	 * @param session
 	 * @param id
 	 * @param model
@@ -166,7 +192,8 @@ public class IndexController {
 	@RequestMapping("voteDetail")
 	public String voteDetail(HttpSession session ,Integer id,Model model) {
 		Article article = articleService.select(id);
-		String content = article.getContent();
+		
+	String content = article.getContent();
 		Gson gson =new Gson();
 		LinkedHashMap<Character,String> mapVote = gson.fromJson(content, LinkedHashMap.class);
 	
@@ -174,13 +201,13 @@ public class IndexController {
 		model.addAttribute("mapVote", mapVote);
 		model.addAttribute("article", article);
 		
-		//查询出投票情况
+		//鏌ヨ鍑烘姇绁ㄦ儏鍐�
 		
 		List<Vote> votes = voteService.selects(article.getId());
 		for (Vote vote : votes) {
-			//获取选项的值并重新封装到vote
+			//鑾峰彇閫夐」鐨勫�煎苟閲嶆柊灏佽鍒皏ote
 			vote.setOption(mapVote.get(vote.getOption()));
-			//计算百分比
+			//璁＄畻鐧惧垎姣�
 			vote.setPercent(new BigDecimal(NumberUtil.ratio(vote.getOptionNum(), vote.getTotalNum())));
 		}
 		model.addAttribute("votes", votes);
@@ -189,15 +216,15 @@ public class IndexController {
 	}
 	
 	
-	//投票
+	//鎶曠エ
 	@ResponseBody
 	@PostMapping("addVote")
 	public boolean addVote(Vote vote ,HttpSession session) {
 		User user = (User) session.getAttribute("user");
 		if(null ==user)
-		return false;//没有登录的用户不能收藏
+		return false;//娌℃湁鐧诲綍鐨勭敤鎴蜂笉鑳芥敹钘�
 		vote.setUserId(user.getId());
-		//检查用户是否已经投过票
+		//妫�鏌ョ敤鎴锋槸鍚﹀凡缁忔姇杩囩エ
 		if(voteService.select(vote)!=null)
 			return false;
 	
@@ -206,7 +233,7 @@ public class IndexController {
 	}
 	
 	
-	//收藏文章
+	//鏀惰棌鏂囩珷
 		@ResponseBody
 		@RequestMapping("deleteCollect")
 		public boolean collect(Integer id) {
@@ -215,29 +242,64 @@ public class IndexController {
 	
 	
 	
-	//收藏文章
+	//鏀惰棌鏂囩珷
 	@ResponseBody
 	@RequestMapping("collect")
 	public boolean collect(Collect collect,HttpSession session) {
 		User user = (User) session.getAttribute("user");
 		if(null ==user)
-		return false;//没有登录的用户不能收藏
+		return false;//娌℃湁鐧诲綍鐨勭敤鎴蜂笉鑳芥敹钘�
 		collect.setUser(user);
 		collect.setCreated(new Date());
 		return collectService.insert(collect)>0;
 	}
 	
-	//增加评论
+	//澧炲姞璇勮
 	@ResponseBody
 	@RequestMapping("addComment")
 	public boolean addComment(Comment comment,Integer articleId,HttpSession session) {
 		User user = (User) session.getAttribute("user");
 		if(null ==user)
-		return false;//没有登录的用户不能评论
+		return false;//娌℃湁鐧诲綍鐨勭敤鎴蜂笉鑳借瘎璁�
 		comment.setUserId(user.getId());
 		comment.setArticleId(articleId);
 		comment.setCreated(new Date());
 		
 		return commentService.insert(comment)>0;
+	}
+	@Autowired
+	private ThreadPoolTaskExecutor executor;
+	@ResponseBody
+	@RequestMapping("dianJi")
+	public boolean dianJi(Integer id,HttpSession session,HttpServletResponse response,HttpServletRequest request) throws UnsupportedEncodingException {
+		//閫氳繃鏂囩珷id鏌ヨ鏂囩珷鏁版嵁
+		Article article = articleService.select(id);
+		String ip = request.getRemoteAddr();
+		//濡傛灉娌℃湁cookie璇存槑娌℃湁鐐瑰嚮鍚屼竴绔�
+		String redisKey="cms_"+id+"_"+ip;
+		Boolean b = rt.hasKey(redisKey);
+		if(b==true) {
+			
+			return false;
+		}else {
+			executor.execute(new Runnable() {
+				
+				@Override
+				public void run() {
+					// TODO Auto-generated method stub
+					rt.opsForValue().set(redisKey,"惊不惊喜");
+				}
+			});
+			 Cookie ck1=new
+					  Cookie(article.getId()+"",article.getId()+"");
+					  ck1.setMaxAge(10000);
+					  ck1.setPath("/");
+					  response.addCookie(ck1);
+					
+					  articleService.dianJi(id);
+		}
+		 
+		
+		return true;
 	}
 }

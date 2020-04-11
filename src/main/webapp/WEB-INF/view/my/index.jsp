@@ -71,7 +71,7 @@ a:visited {
 							color="red">发布文章</font></a></li>
 					<li class="list-group-item"><a href="#"><font color="red">我的收藏</font></a></li>
 					<li class="list-group-item"><a href="#"><font color="red">我的评论</font></a></li>
-					<li class="list-group-item"><a href="#"><font color="red">个人信息</font></a></li>
+					<li class="list-group-item"><a href="#" data="/my/config"><font color="red">个人信息</font></a></li>
 					<li class="list-group-item"><a href="#" data="/my/publishVote"><font color="red" >发起投票</font></a></li>
 				</ul>
 

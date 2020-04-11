@@ -5,6 +5,7 @@ import java.util.List;
 
 import javax.annotation.Resource;
 
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import com.bw.common.utils.StringUtil;
@@ -20,7 +21,9 @@ import com.wzz.cms.util.Md5Util;
 public class UserServiceImpl implements UserService {
 	@Resource
 	UserMapper userMapper;
-
+	@SuppressWarnings("rawtypes")
+	@Resource
+	RedisTemplate rt;
 	@Override
 	public PageInfo<User> selects(User user, Integer page, Integer pageSize) {
 		PageHelper.startPage(page, pageSize);
@@ -84,6 +87,7 @@ public class UserServiceImpl implements UserService {
 	 * @return: User
 	 */
 	public User login(User user) {
+		System.out.println(user);
 		// 1 校验 用户名不能为空"
 		if (!StringUtil.hasText(user.getUsername()))
 			throw new CMSException("用户名不能为空");
@@ -99,7 +103,7 @@ public class UserServiceImpl implements UserService {
 		
 		if(u.getLocked().equals("1"))
 			throw new CMSException("当前账户被禁用，不能登录");
-
+		rt.opsForValue().set("cms",u);
 		return u;
 
 	}

@@ -42,4 +42,11 @@ public interface ArticleMapper {
 	 * @return: int
 	 */
 	int update(Article article);
+	
+	/**
+	 * @description: 点击量
+	 * @param id
+	 * @return
+	 */
+	int dianJi(Integer id);
 }

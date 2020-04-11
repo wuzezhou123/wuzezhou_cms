@@ -48,7 +48,7 @@
 					<a class="list-group-item" href="#" data="/admin/users">用户管理</a> <a
 						class="list-group-item" href="#">栏目管理</a> <a
 						class="list-group-item" href="#">分类管理</a> <a
-						class="list-group-item" href="#">系统设置</a>
+						class="list-group-item" href="#" >系统设置</a>
 				</nav>
 
 			</div>

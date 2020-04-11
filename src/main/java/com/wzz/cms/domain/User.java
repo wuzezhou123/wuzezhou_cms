@@ -105,6 +105,12 @@ public class User implements Serializable{
 	public void setUpdated(Date updated) {
 		this.updated = updated;
 	}
+	@Override
+	public String toString() {
+		return "User [id=" + id + ", username=" + username + ", password=" + password + ", repassword=" + repassword
+				+ ", nickname=" + nickname + ", birthday=" + birthday + ", gender=" + gender + ", locked=" + locked
+				+ ", created=" + created + ", updated=" + updated + ", role=" + role + "]";
+	}
 	
 	
 }

@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="com.wzz.cms.dao.ArticleMapper">
-
+	
+	
+		<update id="dianJi">
+			update cms_article set comment_num=comment_num+1,hits=hits+1 where id=#{id}
+		</update>
 
 
 	<select id="select" resultMap="articleResultMap">
@@ -39,6 +43,8 @@
 		<result column="created" property="created" />
 		<result column="updated" property="updated" />
 		<result column="summary" property="summary" />
+		<result column="keywords" property="keywords"/>
+		<result column="original" property="origin"/>
 		<!-- 封装一对一关系 -->
 		<!-- 用户 -->
 		<association property="user" javaType="User">
@@ -57,7 +63,6 @@
 		</association>
 
 	</resultMap>
-
 	<select id="selects" resultMap="articleResultMap">
 		select a.*,u.username ,c.name as channel_name,cat.`name` as
 		category_name from cms_article a left join cms_user u on a.user_id
